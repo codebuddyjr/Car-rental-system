@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <h2 class="text-2xl font-bold mb-4">Reserve a Car</h2>
+  <div id="msg" class="text-red-600 mb-2"></div>
+  
+  <!-- Car Selection -->
+  <div class="bg-white p-6 rounded shadow mb-6">
+    <h3 class="text-xl font-semibold mb-4">1. Select Car and Dates</h3>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="col-span-2">
+        <label class="block text-sm font-medium mb-1">Car</label>
+        <select id="VIN" class="w-full border p-2 rounded" required>
+          <option value="">Select a car</option>
+        </select>
+        <div id="carDetails" class="mt-2 text-sm text-gray-600"></div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Start Date</label>
+        <input id="Start_Date" type="date" class="w-full border p-2 rounded" required>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">End Date</label>
+        <input id="End_Date" type="date" class="w-full border p-2 rounded" required>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insurance Selection -->
+  <div class="bg-white p-6 rounded shadow mb-6">
+    <h3 class="text-xl font-semibold mb-4">2. Choose Insurance</h3>
+    <div class="space-y-4" id="insuranceOptions">
+      <!-- Insurance options will be populated here -->
+    </div>
+  </div>
+
+  <!-- Cost Summary -->
+  <div class="bg-white p-6 rounded shadow mb-6">
+    <h3 class="text-xl font-semibold mb-4">3. Cost Summary</h3>
+    <div class="space-y-2">
+      <div class="flex justify-between">
+        <span>Daily Car Rate:</span>
+        <span id="dailyRate">₹0.00</span>
+      </div>
+      <div class="flex justify-between">
+        <span>Insurance Rate (per day):</span>
+        <span id="insuranceRate">₹0.00</span>
+      </div>
+      <div class="flex justify-between">
+        <span>Number of Days:</span>
+        <span id="numDays">0</span>
+      </div>
+      <div class="border-t pt-2 flex justify-between font-bold">
+        <span>Total Amount:</span>
+        <span id="totalAmount">₹0.00</span>
+      </div>
+    </div>
+  </div>
+
+  <button onclick="submitReservation()" 
+          class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 
+                 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          id="submitBtn" disabled>
+    Proceed to Payment
+  </button>
+</div>
+
+<script>
+// Set minimum date to today
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('Start_Date').min = today;
+document.getElementById('End_Date').min = today;
+
+let selectedCar = null;
+let insuranceRates = {};
+let selectedInsurance = null;
+
+// Load cars and insurance data
+async function loadInitialData() {
+  // Load cars
+  const res = await fetch('/api/cars');
+  const cars = await res.json();
+  const sel = document.getElementById('VIN');
+  sel.innerHTML = '<option value="">Select car</option>';
+  cars.filter(c => c.Status === 'Available').forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.VIN;
+    opt.text = `${c.Model} - ${c.Car_Type} (${c.Year})`;
+    opt.dataset.carType = c.Car_Type;
+    opt.dataset.dailyRate = c.Daily_Rate;
+    sel.appendChild(opt);
+  });
+
+  // Load insurance rates (simplified for demo)
+  insuranceRates = {
+    'Basic': { rate: 300, coverage: '₹150,000 coverage' },
+    'Standard': { rate: 600, coverage: '₹300,000 coverage' },
+    'Premium': { rate: 900, coverage: '₹500,000 coverage' }
+  };
+  
+  populateInsuranceOptions();
+}
+
+function populateInsuranceOptions() {
+  const container = document.getElementById('insuranceOptions');
+  container.innerHTML = Object.entries(insuranceRates).map(([type, info]) => `
+    <div class="flex items-center space-x-3">
+      <input type="radio" name="insurance" id="${type}" value="${type}"
+             class="form-radio" onchange="updateCostSummary()">
+      <label for="${type}" class="flex flex-col">
+        <span class="font-medium">${type} - ₹${info.rate}/day</span>
+        <span class="text-sm text-gray-600">${info.coverage}</span>
+      </label>
+    </div>
+  `).join('');
+}
+
+function updateCarDetails() {
+  const vin = document.getElementById('VIN').value;
+  const select = document.getElementById('VIN');
+  const option = select.options[select.selectedIndex];
+  
+  if (vin) {
+    selectedCar = {
+      vin: vin,
+      carType: option.dataset.carType,
+      dailyRate: parseFloat(option.dataset.dailyRate)
+    };
+    document.getElementById('carDetails').textContent = 
+      `${option.dataset.carType} - ₹${option.dataset.dailyRate}/day`;
+  } else {
+    selectedCar = null;
+    document.getElementById('carDetails').textContent = '';
+  }
+  updateCostSummary();
+}
+
+function updateCostSummary() {
+  const startDate = document.getElementById('Start_Date').value;
+  const endDate = document.getElementById('End_Date').value;
+  const insurance = document.querySelector('input[name="insurance"]:checked');
+  
+  let days = 0;
+  if (startDate && endDate) {
+    days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
+    if (days < 1) days = 0;
+  }
+
+  const dailyRate = selectedCar ? selectedCar.dailyRate : 0;
+  const insuranceRate = insurance ? insuranceRates[insurance.value].rate : 0;
+  const total = (dailyRate + insuranceRate) * days;
+
+  document.getElementById('dailyRate').textContent = `₹${dailyRate.toFixed(2)}`;
+  document.getElementById('insuranceRate').textContent = `₹${insuranceRate.toFixed(2)}`;
+  document.getElementById('numDays').textContent = days;
+  document.getElementById('totalAmount').textContent = `₹${total.toFixed(2)}`;
+
+  // Enable/disable submit button
+  document.getElementById('submitBtn').disabled = 
+    !selectedCar || !startDate || !endDate || !insurance || days < 1;
+}
+
+async function submitReservation() {
+  const startDate = document.getElementById('Start_Date').value;
+  const endDate = document.getElementById('End_Date').value;
+  const insurance = document.querySelector('input[name="insurance"]:checked').value;
+
+  try {
+    const res = await fetch('/api/reservations/add', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        License_No: '{{ license_no }}',
+        VIN: selectedCar.vin,
+        Start_Date: startDate,
+        End_Date: endDate,
+        Insurance_Type: insurance
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      window.location.href = data.payment_url;
+    } else {
+      document.getElementById('msg').innerText = data.error || 'Reservation failed';
+    }
+  } catch (err) {
+    document.getElementById('msg').innerText = 'Network error. Please try again.';
+  }
+}
+
+// Event listeners
+document.getElementById('VIN').addEventListener('change', updateCarDetails);
+document.getElementById('Start_Date').addEventListener('change', updateCostSummary);
+document.getElementById('End_Date').addEventListener('change', updateCostSummary);
+
+// Initialize
+loadInitialData();
+</script>
+{% endblock %}

@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <h2 class="text-3xl font-bold text-gray-900">Welcome Back!</h2>
+      <p class="mt-2 text-sm text-gray-600">
+        Log in to your account to manage your car rentals
+      </p>
+    </div>
+
+    <!-- Login Type Selector -->
+    <div class="mb-4">
+      <div class="flex justify-center space-x-4">
+        <button id="customerTab" class="px-4 py-2 font-medium rounded-t-lg bg-blue-600 text-white">Customer Login</button>
+        <button id="adminTab" class="px-4 py-2 font-medium rounded-t-lg bg-gray-200">Admin Login</button>
+      </div>
+    </div>
+
+    <!-- Login Form -->
+    <div class="bg-white py-8 px-6 shadow rounded-lg">
+      <div id="msg" class="mb-4 text-center text-red-600 text-sm"></div>
+            
+      <form id="loginForm" class="space-y-6" onsubmit="handleLogin(event)">
+        <!-- Customer Fields -->
+        <div id="customerFields">
+          <div>
+            <label for="license" class="block text-sm font-medium text-gray-700">
+              License Number
+            </label>
+            <div class="mt-1">
+              <input id="license" name="license" type="text" 
+                   class="input-field" placeholder="Enter your license number"/>
+              <div class="license-error text-red-500 text-xs mt-1"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Fields -->
+        <div id="adminFields" style="display: none;">
+          <div>
+            <label for="email" class="block text-sm font-medium text-gray-700">
+              Admin Email
+            </label>
+            <div class="mt-1">
+              <input id="email" name="email" type="email"
+                   class="input-field" placeholder="admin@example.com"/>
+              <div class="email-error text-red-500 text-xs mt-1"></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700">
+            Password
+          </label>
+          <div class="mt-1">
+            <input id="password" name="password" type="password" required 
+                 class="input-field" placeholder="Enter your password"/>
+            <div class="password-error text-red-500 text-xs mt-1"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <input id="remember" name="remember" type="checkbox" 
+                 class="h-4 w-4 text-blue-600 border-gray-300 rounded"/>
+            <label for="remember" class="ml-2 block text-sm text-gray-900">
+              Remember me
+            </label>
+          </div>
+          <div>
+            <a href="#" class="text-sm font-medium text-blue-600 hover:text-blue-500">
+              Forgot password?
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <button type="submit" class="btn-primary w-full flex justify-center py-2">
+            <span id="loginBtnText">Sign In</span>
+            <svg id="loginSpinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </button>
+        </div>
+      </form>
+
+      <div class="mt-6">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white text-gray-500">
+              New to CarRental?
+            </span>
+          </div>
+        </div>
+        <div class="mt-6">
+          <a href="/register" class="w-full flex justify-center py-2 px-4 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 hover:bg-blue-50">
+            Create an account
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let isAdminLogin = false;
+
+document.getElementById('customerTab').addEventListener('click', function() {
+    isAdminLogin = false;
+    this.className = 'px-4 py-2 font-medium rounded-t-lg bg-blue-600 text-white';
+    document.getElementById('adminTab').className = 'px-4 py-2 font-medium rounded-t-lg bg-gray-200';
+    document.getElementById('customerFields').style.display = 'block';
+    document.getElementById('adminFields').style.display = 'none';
+    document.getElementById('registerLink').style.display = 'block';
+    document.getElementById('license').required = true;
+    document.getElementById('email').required = false;
+});
+
+document.getElementById('adminTab').addEventListener('click', function() {
+    isAdminLogin = true;
+    this.className = 'px-4 py-2 font-medium rounded-t-lg bg-blue-600 text-white';
+    document.getElementById('customerTab').className = 'px-4 py-2 font-medium rounded-t-lg bg-gray-200';
+    document.getElementById('customerFields').style.display = 'none';
+    document.getElementById('adminFields').style.display = 'block';
+    document.getElementById('registerLink').style.display = 'none';
+    document.getElementById('license').required = false;
+    document.getElementById('email').required = true;
+});
+
+async function handleLogin(event) {
+    event.preventDefault();
+    
+    // Reset error messages
+    document.querySelector('.license-error').textContent = '';
+    document.querySelector('.email-error').textContent = '';
+    document.querySelector('.password-error').textContent = '';
+    document.getElementById('msg').textContent = '';
+    
+    const password = document.getElementById('password').value;
+    let credentials = { Password: password };
+    
+    if (isAdminLogin) {
+        const email = document.getElementById('email').value.trim();
+        if (!email) {
+            document.querySelector('.email-error').textContent = 'Email is required';
+            return;
+        }
+        credentials.Email = email;
+        credentials.isAdmin = true;
+    } else {
+        const license = document.getElementById('license').value.trim();
+        if (!license) {
+            document.querySelector('.license-error').textContent = 'License number is required';
+            return;
+        }
+        credentials.License_No = license;
+    }
+    
+    if (!password) {
+        document.querySelector('.password-error').textContent = 'Password is required';
+        return;
+    }
+    
+    // Show loading state
+    const btnText = document.getElementById('loginBtnText');
+    const spinner = document.getElementById('loginSpinner');
+    btnText.textContent = 'Signing in...';
+    spinner.classList.remove('hidden');
+    
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(credentials)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            if (!isAdminLogin && document.getElementById('remember').checked) {
+                localStorage.setItem('rememberedLicense', credentials.License_No);
+            } else {
+                localStorage.removeItem('rememberedLicense');
+            }
+            
+            // Show success message before redirect
+            showNotification('Login successful! Redirecting...', 'success');
+            setTimeout(() => {
+                window.location.href = isAdminLogin ? '/admin' : '/dashboard';
+            }, 500);
+        } else {
+            document.getElementById('msg').innerText = data.error || 'Login failed. Please check your credentials.';
+        }
+    } catch (error) {
+        document.getElementById('msg').innerText = 'An error occurred. Please try again.';
+    } finally {
+        btnText.textContent = 'Sign In';
+        spinner.classList.add('hidden');
+    }
+}
+
+// Check for remembered license number
+document.addEventListener('DOMContentLoaded', () => {
+  const rememberedLicense = localStorage.getItem('rememberedLicense');
+  if (rememberedLicense) {
+    document.getElementById('license').value = rememberedLicense;
+    document.getElementById('remember').checked = true;
+  }
+    
+  // Focus on empty license field or password
+  if (!document.getElementById('license').value) {
+    document.getElementById('license').focus();
+  } else {
+    document.getElementById('password').focus();
+  }
+});
+</script>
+{% endblock %}

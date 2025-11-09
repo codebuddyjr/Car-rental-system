@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">Payment Details</h2>
+            <div class="text-gray-600">
+                <span class="font-semibold">Amount:</span>
+                <span id="amountDisplay" class="text-green-600">₹{{ amount }}</span>
+            </div>
+        </div>
+        
+        <form id="paymentForm" class="space-y-4">
+            <div id="errorMsg" class="hidden text-red-600 text-sm p-3 bg-red-50 rounded"></div>
+            
+            <!-- Card Number -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
+                <div class="relative">
+                    <input type="text" id="cardNumber" 
+                           class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="4111 1111 1111 1111"
+                           maxlength="19">
+                    <span id="cardType" class="absolute right-3 top-2.5 text-gray-400"></span>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">Supported: Visa, Mastercard, RuPay</div>
+            </div>
+
+            <!-- Card Holder Name -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Name on Card</label>
+                <input type="text" id="cardName" 
+                       class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="Name as shown on card">
+            </div>
+
+            <!-- Expiry and CVV -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+                    <input type="month" id="expiry" 
+                           class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           min="{{ min_expiry }}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">CVV</label>
+                    <input type="password" id="cvv" 
+                           class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="123" maxlength="3">
+                </div>
+            </div>
+
+            <!-- Billing Address -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Billing Address</label>
+                <textarea id="billingAddress" rows="2" 
+                         class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                         placeholder="Enter your billing address"></textarea>
+            </div>
+
+            <!-- Payment Button -->
+            <button type="submit" 
+                    class="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 
+                           transition-colors duration-200 mt-6">
+                Pay ₹{{ amount }}
+            </button>
+
+            <!-- Save Card Checkbox -->
+            <div class="flex items-center mt-4">
+                <input type="checkbox" id="saveCard" class="rounded text-blue-600">
+                <label for="saveCard" class="ml-2 text-sm text-gray-600">
+                    Save card for future payments
+                </label>
+            </div>
+        </form>
+
+        <!-- Security Info -->
+        <div class="mt-6 text-center text-xs text-gray-500">
+            <p>🔒 Your payment is secured with 256-bit encryption</p>
+            <div class="flex justify-center space-x-4 mt-2">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/1200px-Visa_Inc._logo.svg.png" 
+                     alt="Visa" class="h-6 opacity-50">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" 
+                     alt="Mastercard" class="h-6 opacity-50">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/RuPay-Logo.png/1200px-RuPay-Logo.png" 
+                     alt="RuPay" class="h-6 opacity-50">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Card number formatting
+document.getElementById('cardNumber').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    let formattedValue = '';
+    for (let i = 0; i < value.length; i++) {
+        if (i > 0 && i % 4 === 0) {
+            formattedValue += ' ';
+        }
+        formattedValue += value[i];
+    }
+    e.target.value = formattedValue;
+
+    // Simple card type detection
+    const firstDigit = value[0] || '';
+    const cardType = document.getElementById('cardType');
+    if (firstDigit === '4') {
+        cardType.textContent = '💳 Visa';
+    } else if (['51','52','53','54','55'].includes(value.substring(0,2))) {
+        cardType.textContent = '💳 Mastercard';
+    } else if (['60','65','81','82'].includes(value.substring(0,2))) {
+        cardType.textContent = '💳 RuPay';
+    } else {
+        cardType.textContent = '💳';
+    }
+});
+
+// Form validation and submission
+document.getElementById('paymentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const errorMsg = document.getElementById('errorMsg');
+    errorMsg.classList.add('hidden');
+
+    // Basic validation
+    const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+    const cardName = document.getElementById('cardName').value;
+    const expiry = document.getElementById('expiry').value;
+    const cvv = document.getElementById('cvv').value;
+    const address = document.getElementById('billingAddress').value;
+
+    if (cardNumber.length !== 16) {
+        showError('Please enter a valid 16-digit card number');
+        return;
+    }
+    if (!cardName.trim()) {
+        showError('Please enter the name on your card');
+        return;
+    }
+    if (!expiry) {
+        showError('Please select card expiry date');
+        return;
+    }
+    if (cvv.length !== 3) {
+        showError('Please enter a valid 3-digit CVV');
+        return;
+    }
+    if (!address.trim()) {
+        showError('Please enter your billing address');
+        return;
+    }
+
+    // Show loading state
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+
+    try {
+        const res = await fetch('/api/payments/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                Amount: parseFloat(document.getElementById('amountDisplay').textContent.replace('₹','')),
+                Card_No: cardNumber,
+                Name_on_Card: cardName,
+                Expiry_Date: expiry + '-01', // Add day for MySQL date format
+                CVV: cvv,
+                Billing_Address: address,
+                Paid_By_Cash: false
+            })
+        });
+
+        if (res.ok) {
+            showSuccess();
+            setTimeout(() => {
+                window.location.href = '/my_reservations';
+            }, 2000);
+        } else {
+            const data = await res.json();
+            showError(data.error || 'Payment failed. Please try again.');
+        }
+    } catch (err) {
+        showError('Network error. Please try again.');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+});
+
+function showError(message) {
+    const errorMsg = document.getElementById('errorMsg');
+    errorMsg.textContent = message;
+    errorMsg.classList.remove('hidden');
+}
+
+function showSuccess() {
+    const form = document.getElementById('paymentForm');
+    form.innerHTML = `
+        <div class="text-center py-8">
+            <div class="text-5xl mb-4">✅</div>
+            <h3 class="text-xl font-semibold text-green-600 mb-2">Payment Successful!</h3>
+            <p class="text-gray-600">Your reservation is confirmed</p>
+            <p class="text-sm text-gray-500 mt-4">Redirecting to your reservations...</p>
+        </div>
+    `;
+}
+
+// Set minimum expiry date to current month
+const today = new Date();
+const minExpiry = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+document.getElementById('expiry').min = minExpiry;
+</script>
+{% endblock %}

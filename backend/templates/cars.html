@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold">Available Cars</h2>
+    <div class="flex items-center space-x-2">
+      <input id="search" placeholder="Search by model or type" class="input-field" style="width:260px;" />
+    </div>
+  </div>
+
+  <div id="list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+</div>
+
+<script>
+async function loadCars(){
+  const res = await fetch('/api/cars');
+  const data = await res.json();
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+
+  if (!Array.isArray(data) || data.length === 0) {
+    list.innerHTML = '<p class="text-center text-gray-500 col-span-3">No cars available</p>';
+    return;
+  }
+
+  const search = (document.getElementById('search').value || '').toLowerCase();
+  const filtered = data.filter(c => {
+    if (!search) return true;
+    return (c.Model || '').toLowerCase().includes(search) || (c.Car_Type || '').toLowerCase().includes(search);
+  });
+
+  filtered.forEach(c=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    const daily = c.Daily_Rate ? `₹${Number(c.Daily_Rate).toFixed(2)}` : '-';
+    card.innerHTML = `
+      <div class="flex justify-between items-start">
+        <div>
+          <h3 class="text-lg font-semibold">${c.Model}</h3>
+          <div class="text-sm text-gray-500">${c.Car_Type} • ${c.Year || ''}</div>
+        </div>
+        <div class="text-right">
+          <div class="text-sm text-gray-500">${c.Status}</div>
+          <div class="text-xl font-bold text-blue-600">${daily}</div>
+        </div>
+      </div>
+      <div class="mt-4 flex items-center justify-between">
+        <div class="text-sm text-gray-600">VIN: ${c.VIN}</div>
+        <div class="flex items-center gap-2">
+          <a href="/reserve?vin=${c.VIN}" class="btn-primary text-sm">Reserve</a>
+          <button class="btn-secondary text-sm" onclick="viewDetails('${c.VIN}')">Details</button>
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function viewDetails(vin) {
+  // For now, show VIN in an alert. Can be replaced with modal.
+  alert('Open details for VIN: ' + vin);
+}
+
+document.getElementById('search').addEventListener('input', function(){
+  loadCars();
+});
+
+loadCars();
+</script>
+
+{% endblock %}

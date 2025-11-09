@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold">My Reservations</h2>
+    <a href="/reserve" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+      + New Reservation
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white p-4 rounded-lg shadow mb-6">
+    <div class="flex items-center gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+        <select id="statusFilter" class="border rounded px-2 py-1">
+          <option value="">All</option>
+          <option value="Pending">Pending</option>
+          <option value="Confirmed">Confirmed</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
+        <select id="dateFilter" class="border rounded px-2 py-1">
+          <option value="all">All Time</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="past">Past</option>
+          <option value="current">Current</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reservations List -->
+  <div id="list" class="space-y-4"></div>
+
+  <!-- No Reservations Message -->
+  <div id="noReservations" class="hidden">
+    <div class="text-center py-12">
+      <div class="text-4xl mb-4">🚗</div>
+      <h3 class="text-xl font-semibold text-gray-700 mb-2">No Reservations Found</h3>
+      <p class="text-gray-600 mb-6">Start by making your first car reservation</p>
+      <a href="/reserve" class="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+        Reserve a Car
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+const statusFilter = document.getElementById('statusFilter');
+const dateFilter = document.getElementById('dateFilter');
+let allReservations = [];
+
+async function loadMyRes() {
+  try {
+    const res = await fetch('/api/my_reservations');
+    if (!res.ok) { 
+      if (res.status === 401) {
+        window.location = '/login';
+      }
+      throw new Error('Failed to load reservations');
+    }
+    
+    allReservations = await res.json();
+    filterAndDisplayReservations();
+    
+  } catch (err) {
+    console.error('Error loading reservations:', err);
+    document.getElementById('list').innerHTML = `
+      <div class="bg-red-50 text-red-600 p-4 rounded">
+        Error loading reservations. Please try again.
+      </div>
+    `;
+  }
+}
+
+function filterAndDisplayReservations() {
+  const status = statusFilter.value;
+  const dateRange = dateFilter.value;
+  const today = new Date();
+  
+  let filtered = allReservations;
+  
+  // Apply status filter
+  if (status) {
+    filtered = filtered.filter(r => r.Status === status);
+  }
+  
+  // Apply date filter
+  if (dateRange !== 'all') {
+    filtered = filtered.filter(r => {
+      const startDate = new Date(r.Start_Date);
+      const endDate = new Date(r.End_Date);
+      
+      switch (dateRange) {
+        case 'upcoming':
+          return startDate > today;
+        case 'past':
+          return endDate < today;
+        case 'current':
+          return startDate <= today && endDate >= today;
+        default:
+          return true;
+      }
+    });
+  }
+  
+  displayReservations(filtered);
+}
+
+function displayReservations(reservations) {
+  const list = document.getElementById('list');
+  const noReservations = document.getElementById('noReservations');
+  
+  if (!reservations.length) {
+    list.innerHTML = '';
+    noReservations.classList.remove('hidden');
+    return;
+  }
+  
+  noReservations.classList.add('hidden');
+  list.innerHTML = reservations.map(r => `
+    <div class="bg-white p-6 rounded-lg shadow-sm hover:shadow transition-shadow">
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <h3 class="text-lg font-semibold mb-1">
+            ${r.Model}
+            <span class="text-sm font-normal text-gray-500 ml-2">#${r.Reservation_ID}</span>
+          </h3>
+          <p class="text-sm text-gray-600">
+            ${formatDate(r.Start_Date)} → ${formatDate(r.End_Date)}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="status-badge status-${r.Status.toLowerCase()}">${r.Status}</span>
+          ${r.Status === 'Pending' ? `
+            <button onclick="cancelReservation(${r.Reservation_ID})" 
+                    class="text-red-600 hover:text-red-700">
+              Cancel
+            </button>
+          ` : ''}
+        </div>
+      </div>
+      <div class="text-sm grid grid-cols-2 gap-4">
+        <div>
+          <span class="text-gray-600">Total Amount:</span>
+          <span class="font-medium">₹${r.Total_Amount || 'N/A'}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function cancelReservation(id) {
+  if (!confirm('Are you sure you want to cancel this reservation?')) return;
+  
+  try {
+    const res = await fetch(`/api/reservations/${id}/cancel`, {
+      method: 'POST'
+    });
+    
+    if (!res.ok) throw new Error('Failed to cancel reservation');
+    
+    // Refresh the list
+    loadMyRes();
+    
+  } catch (err) {
+    alert('Failed to cancel reservation. Please try again.');
+  }
+}
+
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString('en-IN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+// Add event listeners
+statusFilter.addEventListener('change', filterAndDisplayReservations);
+dateFilter.addEventListener('change', filterAndDisplayReservations);
+
+// Initial load
+loadMyRes();
+</script>
+
+<style>
+.status-badge {
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.status-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+.status-confirmed {
+  background-color: #dcfce7;
+  color: #166534;
+}
+.status-cancelled {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+</style>
+{% endblock %}

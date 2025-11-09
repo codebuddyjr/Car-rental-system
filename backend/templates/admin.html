@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="bg-white p-6 rounded-lg shadow mb-6">
+    <div class="flex justify-between items-center">
+      <div>
+        <h2 class="text-2xl font-bold">Admin Dashboard</h2>
+        <p class="text-gray-600 mt-1">System Overview</p>
+      </div>
+      <button onclick="logout()" class="flex items-center text-red-600 hover:text-red-700">
+        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        Logout
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Overview -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white p-6 rounded-lg shadow">
+      <div class="text-gray-500 mb-1">Total Users</div>
+      <div class="text-2xl font-bold" id="totalUsers">-</div>
+      <div class="text-sm text-gray-500" id="newUsers">New today: -</div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow">
+      <div class="text-gray-500 mb-1">Active Reservations</div>
+      <div class="text-2xl font-bold" id="activeReservations">-</div>
+      <div class="text-sm text-gray-500" id="pendingReservations">Pending: -</div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow">
+      <div class="text-gray-500 mb-1">Available Cars</div>
+      <div class="text-2xl font-bold" id="availableCars">-</div>
+      <div class="text-sm text-gray-500" id="totalCars">Total fleet: -</div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow">
+      <div class="text-gray-500 mb-1">Revenue (This Month)</div>
+      <div class="text-2xl font-bold" id="monthlyRevenue">₹0</div>
+      <div class="text-sm text-gray-500" id="revenueChange">vs last month: -</div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+    <!-- Users and Reservations -->
+    <div class="md:col-span-8 space-y-6">
+      <!-- Users Table -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">Recent Users</h3>
+          <div class="flex items-center gap-2">
+            <input type="text" id="userSearch" placeholder="Search users..." 
+                   class="border rounded px-3 py-1 text-sm">
+            <button onclick="exportUsers()" class="text-blue-600 hover:text-blue-700 text-sm">
+              Export
+            </button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead>
+              <tr class="bg-gray-50">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">License No</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTable" class="divide-y divide-gray-200">
+              <!-- User rows will be populated here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Reservations Table -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">Recent Reservations</h3>
+          <div class="flex items-center gap-2">
+            <select id="reservationFilter" class="border rounded px-3 py-1 text-sm">
+              <option value="all">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+            <button onclick="exportReservations()" class="text-blue-600 hover:text-blue-700 text-sm">
+              Export
+            </button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead>
+              <tr class="bg-gray-50">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Car</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dates</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reservationsTable" class="divide-y divide-gray-200">
+              <!-- Reservation rows will be populated here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="md:col-span-4 space-y-6">
+      <!-- Revenue Chart -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold mb-4">Revenue Trend</h3>
+        <div id="revenueChart" class="h-64">
+          <!-- Chart will be rendered here -->
+        </div>
+      </div>
+
+      <!-- Car Status -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold mb-4">Fleet Status</h3>
+        <div id="carStatus" class="space-y-4">
+          <!-- Car status will be populated here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reservation Details Modal (hidden by default) -->
+<div id="reservationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4">
+    <div class="p-4 border-b flex justify-between items-center">
+      <h3 class="text-lg font-semibold">Reservation Details — <span class="modal-id"></span></h3>
+      <button onclick="closeReservationModal()" class="text-gray-600 hover:text-gray-800">Close ✕</button>
+    </div>
+    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <div class="text-sm text-gray-500">User</div>
+        <div class="font-medium modal-user"></div>
+
+        <div class="text-sm text-gray-500 mt-3">Contact</div>
+        <div class="modal-contact text-sm"></div>
+
+        <div class="text-sm text-gray-500 mt-3">Address</div>
+        <div class="modal-address text-sm"></div>
+      </div>
+      <div>
+        <div class="text-sm text-gray-500">Car</div>
+        <div class="font-medium modal-car"></div>
+
+        <div class="text-sm text-gray-500 mt-3">Dates</div>
+        <div class="modal-dates text-sm"></div>
+
+        <div class="text-sm text-gray-500 mt-3">Insurance</div>
+        <div class="modal-insurance text-sm"></div>
+      </div>
+    </div>
+    <div class="p-6 border-t grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <div class="text-sm text-gray-500">Status</div>
+        <div class="modal-status font-medium"></div>
+      </div>
+      <div>
+        <div class="text-sm text-gray-500">Amount</div>
+        <div class="modal-amount font-medium"></div>
+      </div>
+      <div>
+        <div class="text-sm text-gray-500">Payment</div>
+        <div class="modal-payment text-sm"></div>
+      </div>
+    </div>
+    <div class="p-4 flex justify-end">
+      <button onclick="closeReservationModal()" class="btn-secondary">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let revenueChart = null;
+
+// Load all data
+async function loadAdminDashboard() {
+  try {
+    await Promise.all([
+      loadStats(),
+      loadUsers(),
+      loadReservations(),
+      loadRevenue(),
+      loadCarStatus()
+    ]);
+  } catch (err) {
+    console.error('Error loading dashboard:', err);
+  }
+}
+
+// Load overview statistics
+async function loadStats() {
+  try {
+    const res = await fetch('/api/admin/stats');
+    const data = await res.json();
+    
+    document.getElementById('totalUsers').textContent = data.totalUsers;
+    document.getElementById('newUsers').textContent = `New today: ${data.newUsers}`;
+    document.getElementById('activeReservations').textContent = data.activeReservations;
+    document.getElementById('pendingReservations').textContent = `Pending: ${data.pendingReservations}`;
+    document.getElementById('availableCars').textContent = data.availableCars;
+    document.getElementById('totalCars').textContent = `Total fleet: ${data.totalCars}`;
+    document.getElementById('monthlyRevenue').textContent = `₹${data.monthlyRevenue}`;
+    document.getElementById('revenueChange').textContent = 
+      `${data.revenueChange >= 0 ? '+' : ''}${data.revenueChange}% vs last month`;
+  } catch (err) {
+    console.error('Error loading stats:', err);
+  }
+}
+
+// Load and display users
+async function loadUsers() {
+  try {
+    const res = await fetch('/api/admin/users');
+    const users = await res.json();
+    
+    const tbody = document.getElementById('usersTable');
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td class="px-6 py-4">${u.License_No}</td>
+        <td class="px-6 py-4">${u.FName} ${u.LName}</td>
+        <td class="px-6 py-4">${u.Email}</td>
+        <td class="px-6 py-4">
+          <span class="px-2 py-1 text-xs rounded-full ${
+            u.User_Type === 'Customer' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+          }">${u.User_Type}</span>
+        </td>
+        <td class="px-6 py-4">
+          <button onclick="viewUser('${u.License_No}')" 
+                  class="text-blue-600 hover:text-blue-700">View</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    console.error('Error loading users:', err);
+  }
+}
+
+// Load and display reservations
+async function loadReservations() {
+  try {
+    const res = await fetch('/api/admin/reservations');
+    const reservations = await res.json();
+    
+    const tbody = document.getElementById('reservationsTable');
+    tbody.innerHTML = reservations.map(r => `
+      <tr>
+        <td class="px-6 py-4">#${r.Reservation_ID}</td>
+        <td class="px-6 py-4">${r.FName} ${r.LName}</td>
+        <td class="px-6 py-4">${r.Model}</td>
+        <td class="px-6 py-4">
+          <div>${formatDate(r.Start_Date)}</div>
+          <div class="text-sm text-gray-500">to ${formatDate(r.End_Date)}</div>
+        </td>
+        <td class="px-6 py-4">
+          <span class="px-2 py-1 text-xs rounded-full ${getStatusStyle(r.Status)}">
+            ${r.Status}
+          </span>
+        </td>
+        <td class="px-6 py-4">₹${r.Total_Amount}</td>
+        <td class="px-6 py-4">
+          <button onclick="viewReservationDetails(${r.Reservation_ID})" class="text-blue-600 hover:text-blue-800">
+            View
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    console.error('Error loading reservations:', err);
+  }
+}
+
+// Load and display revenue chart
+async function loadRevenue() {
+  try {
+    const res = await fetch('/api/admin/revenue');
+    const data = await res.json();
+    
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    if (revenueChart) {
+      revenueChart.destroy();
+    }
+    
+    revenueChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.labels,
+        datasets: [{
+          label: 'Revenue',
+          data: data.values,
+          borderColor: '#2563eb',
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    });
+  } catch (err) {
+    console.error('Error loading revenue:', err);
+  }
+}
+
+// Load and display car status
+async function loadCarStatus() {
+  try {
+    const res = await fetch('/api/admin/car-status');
+    const data = await res.json();
+    
+    const container = document.getElementById('carStatus');
+    container.innerHTML = Object.entries(data).map(([type, info]) => `
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="font-medium">${type}</div>
+          <div class="text-sm text-gray-500">
+            ${info.available} available / ${info.total} total
+          </div>
+        </div>
+        <div class="text-sm">
+          Utilization: ${Math.round((1 - info.available/info.total) * 100)}%
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Error loading car status:', err);
+  }
+}
+
+function getStatusStyle(status) {
+  const styles = {
+    'Confirmed': 'bg-green-100 text-green-800',
+    'Pending': 'bg-yellow-100 text-yellow-800',
+    'Cancelled': 'bg-gray-100 text-gray-800'
+  };
+  return styles[status] || 'bg-gray-100 text-gray-800';
+}
+
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString('en-IN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+async function viewUser(licenseNo) {
+  // Implement user details view
+}
+
+async function viewReservationDetails(id) {
+  try {
+    const res = await fetch(`/api/admin/reservation/${id}`);
+    if (!res.ok) {
+      alert('Failed to fetch reservation details');
+      return;
+    }
+    const r = await res.json();
+    // Populate modal
+    const modal = document.getElementById('reservationModal');
+    modal.querySelector('.modal-id').textContent = r.Reservation_ID;
+    modal.querySelector('.modal-user').textContent = `${r.FName} ${r.LName} (${r.License_No})`;
+    modal.querySelector('.modal-contact').textContent = `${r.Email || ''} ${r.Phones ? '• ' + r.Phones : ''}`;
+    modal.querySelector('.modal-car').textContent = `${r.Model} (${r.VIN}) — ${r.Car_Type}`;
+    modal.querySelector('.modal-dates').textContent = `${formatDate(r.Start_Date)} → ${formatDate(r.End_Date)}`;
+    modal.querySelector('.modal-status').textContent = r.Status;
+    modal.querySelector('.modal-amount').textContent = `₹${r.Total_Amount || 0}`;
+    modal.querySelector('.modal-insurance').textContent = r.Insurance_Type || '—';
+    modal.querySelector('.modal-address').textContent = r.Address || '—';
+    modal.querySelector('.modal-dob').textContent = r.DOB || '—';
+    modal.querySelector('.modal-payment').textContent = r.Payment_Amount ? `₹${r.Payment_Amount} on ${formatDate(r.Payment_Date)}` : 'No payment recorded';
+
+    // show modal
+    modal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+  } catch (err) {
+    console.error('Error fetching reservation details', err);
+    alert('Error fetching reservation details');
+  }
+}
+
+function closeReservationModal() {
+  const modal = document.getElementById('reservationModal');
+  modal.classList.add('hidden');
+  document.body.classList.remove('overflow-hidden');
+}
+
+async function exportUsers() {
+  // Implement user export
+}
+
+async function exportReservations() {
+  // Implement reservation export
+}
+
+async function logout() {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location = '/login';
+}
+
+// Event Listeners
+document.getElementById('userSearch').addEventListener('input', function(e) {
+  // Implement user search
+});
+
+document.getElementById('reservationFilter').addEventListener('change', function(e) {
+  // Implement reservation filter
+});
+
+// Initialize dashboard
+loadAdminDashboard();
+
+// Refresh data periodically
+setInterval(loadAdminDashboard, 60000); // Refresh every minute
+</script>
+{% endblock %}

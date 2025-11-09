@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <!-- Header -->
+  <div class="bg-white p-6 rounded-lg shadow mb-6">
+    <div class="flex justify-between items-center">
+      <div>
+        <h2 class="text-2xl font-bold">Welcome, <span id="userName" class="text-blue-600"></span></h2>
+        <p class="text-gray-600 mt-1">Manage your car rentals and reservations</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <button onclick="logout()" class="flex items-center text-red-600 hover:text-red-700">
+          <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+    <!-- Main Content -->
+    <div class="md:col-span-8">
+      <!-- Quick Actions -->
+      <div class="bg-white p-6 rounded-lg shadow mb-6">
+        <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <a href="/reserve" class="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
+            <div class="p-3 bg-blue-100 rounded-full mr-4">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M12 4v16m8-8H4"/>
+              </svg>
+            </div>
+            <div>
+              <h4 class="font-semibold">New Reservation</h4>
+              <p class="text-sm text-gray-600">Book a car for your next trip</p>
+            </div>
+          </a>
+          <a href="/my_reservations" class="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition">
+            <div class="p-3 bg-green-100 rounded-full mr-4">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+            </div>
+            <div>
+              <h4 class="font-semibold">My Reservations</h4>
+              <p class="text-sm text-gray-600">View and manage bookings</p>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Active Reservations -->
+      <div class="bg-white p-6 rounded-lg shadow mb-6">
+        <h3 class="text-lg font-semibold mb-4">Active Reservations</h3>
+        <div id="activeReservations" class="space-y-4">
+          <!-- Active reservations will be loaded here -->
+          <div class="animate-pulse">
+            <div class="h-24 bg-gray-100 rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="md:col-span-4 space-y-6">
+      <!-- Current Car -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold mb-4">Current Rental</h3>
+        <div id="currentRental">
+          <!-- Current rental will be loaded here -->
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
+        <div id="recentActivity" class="space-y-4">
+          <!-- Recent activity will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Load user data and populate dashboard
+async function loadDashboard() {
+  try {
+    // Load user details
+    const userRes = await fetch('/api/users/current');
+    if (userRes.ok) {
+      const userData = await userRes.json();
+      document.getElementById('userName').textContent = userData.FName;
+    }
+
+    // Load active reservations
+    const reservationsRes = await fetch('/api/my_reservations');
+    if (reservationsRes.ok) {
+      const reservations = await reservationsRes.json();
+      displayActiveReservations(reservations);
+      displayCurrentRental(reservations);
+      displayRecentActivity(reservations);
+    }
+  } catch (err) {
+    console.error('Error loading dashboard:', err);
+  }
+}
+
+function displayActiveReservations(reservations) {
+  const active = reservations.filter(r => r.Status === 'Confirmed');
+  const container = document.getElementById('activeReservations');
+  
+  if (!active.length) {
+    container.innerHTML = `
+      <div class="text-center py-6 text-gray-500">
+        <p>No active reservations</p>
+        <a href="/reserve" class="text-blue-600 hover:underline text-sm">Make a reservation</a>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = active.map(r => `
+    <div class="flex justify-between items-center p-4 border rounded-lg">
+      <div>
+        <h4 class="font-semibold">${r.Model}</h4>
+        <p class="text-sm text-gray-600">
+          ${formatDate(r.Start_Date)} - ${formatDate(r.End_Date)}
+        </p>
+      </div>
+      <a href="/my_reservations" class="text-blue-600 hover:underline text-sm">
+        View Details →
+      </a>
+    </div>
+  `).join('');
+}
+
+function displayCurrentRental(reservations) {
+  const today = new Date();
+  const current = reservations.find(r => {
+    const start = new Date(r.Start_Date);
+    const end = new Date(r.End_Date);
+    return r.Status === 'Confirmed' && start <= today && end >= today;
+  });
+  
+  const container = document.getElementById('currentRental');
+  
+  if (!current) {
+    container.innerHTML = `
+      <div class="text-center py-4 text-gray-500">
+        <p>No active rental</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = `
+    <div class="space-y-2">
+      <div class="text-2xl font-bold text-blue-600">${current.Model}</div>
+      <div class="text-sm text-gray-600">
+        <p>Started: ${formatDate(current.Start_Date)}</p>
+        <p>Ends: ${formatDate(current.End_Date)}</p>
+      </div>
+      <a href="/my_reservations" class="inline-block mt-2 text-blue-600 hover:underline">
+        View Details →
+      </a>
+    </div>
+  `;
+}
+
+function displayRecentActivity(reservations) {
+  const recent = reservations.slice(0, 5); // Show last 5 activities
+  const container = document.getElementById('recentActivity');
+  
+  if (!recent.length) {
+    container.innerHTML = `
+      <div class="text-center py-4 text-gray-500">
+        <p>No recent activity</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = recent.map(r => `
+    <div class="flex items-center gap-3">
+      <div class="w-2 h-2 rounded-full ${getStatusColor(r.Status)}"></div>
+      <div class="flex-1">
+        <p class="font-medium">${r.Model}</p>
+        <p class="text-sm text-gray-600">${r.Status} • ${formatDate(r.Start_Date)}</p>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getStatusColor(status) {
+  const colors = {
+    'Confirmed': 'bg-green-500',
+    'Pending': 'bg-yellow-500',
+    'Cancelled': 'bg-gray-500'
+  };
+  return colors[status] || 'bg-gray-500';
+}
+
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+}
+
+async function logout(){
+  await fetch('/api/logout',{method:'POST'});
+  window.location = '/login';
+}
+
+// Initialize
+loadDashboard();
+</script>
+{% endblock %}

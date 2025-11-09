@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 lg:px-8">
+  <div class="max-w-2xl w-full">
+    <div class="bg-white py-8 px-6 shadow rounded-lg">
+      <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold">Create your account</h2>
+        <p class="text-sm text-gray-500">Register to start booking cars</p>
+      </div>
+
+      <div id="msg" class="mb-4 text-sm text-red-600"></div>
+
+      <form id="registerForm" class="grid grid-cols-1 md:grid-cols-2 gap-4" onsubmit="handleRegister(event)">
+        <div>
+          <label class="text-sm font-medium text-gray-700">License Number</label>
+          <input id="License_No" name="License_No" required class="input-field mt-1" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700">Phone</label>
+          <input id="Phone" name="Phone" required class="input-field mt-1" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700">First Name</label>
+          <input id="FName" name="FName" required class="input-field mt-1" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700">Last Name</label>
+          <input id="LName" name="LName" required class="input-field mt-1" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700">Middle Name</label>
+          <input id="MName" name="MName" class="input-field mt-1" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700">Email</label>
+          <input id="Email" name="Email" type="email" required class="input-field mt-1" />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="text-sm font-medium text-gray-700">Address</label>
+          <input id="Address" name="Address" class="input-field mt-1" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700">Date of Birth</label>
+          <input id="DOB" name="DOB" type="date" class="input-field mt-1" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700">User Type</label>
+          <select id="User_Type" name="User_Type" class="select-field mt-1">
+            <option>Customer</option>
+            <option>Guest</option>
+          </select>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="text-sm font-medium text-gray-700">Password</label>
+          <input id="Password" name="Password" type="password" required class="input-field mt-1" />
+        </div>
+
+        <div class="md:col-span-2 flex items-center justify-between mt-4">
+          <div>
+            <button type="submit" class="btn-primary">Create Account</button>
+            <a href="/login" class="ml-4 text-sm text-gray-600 hover:underline">Back to login</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+async function handleRegister(e) {
+  e.preventDefault();
+  document.getElementById('msg').textContent = '';
+  const payload = {
+    License_No: document.getElementById('License_No').value.trim(),
+    FName: document.getElementById('FName').value.trim(),
+    MName: document.getElementById('MName').value.trim(),
+    LName: document.getElementById('LName').value.trim(),
+    Email: document.getElementById('Email').value.trim(),
+    Address: document.getElementById('Address').value.trim(),
+    DOB: document.getElementById('DOB').value || null,
+    User_Type: document.getElementById('User_Type').value,
+    Password: document.getElementById('Password').value,
+    Phone: document.getElementById('Phone').value.trim()
+  };
+
+  // Basic client-side validation
+  if (!payload.License_No || !payload.FName || !payload.LName || !payload.Email || !payload.Password) {
+    document.getElementById('msg').textContent = 'Please fill all required fields.';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showNotification('Registration successful. You can now log in.', 'success');
+      setTimeout(() => window.location = '/login', 700);
+    } else {
+      document.getElementById('msg').textContent = data.error || 'Registration failed';
+    }
+  } catch (err) {
+    document.getElementById('msg').textContent = 'An error occurred. Try again.';
+  }
+}
+</script>
+{% endblock %}

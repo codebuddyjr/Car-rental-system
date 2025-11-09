@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Rental System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    sans: ['Inter', 'sans-serif'],
+                }
+            }
+        }
+    }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .nav-link {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            transition: color 0.2s;
+        }
+        .nav-link:hover {
+            color: #2563eb;
+        }
+        .nav-link.active {
+            color: #2563eb;
+        }
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #374151;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+        .select-field {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+        }
+        .select-field:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+        .table-header {
+            padding: 0.75rem 1.5rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .table-cell {
+            padding: 0.75rem 1.5rem;
+            white-space: nowrap;
+            font-size: 0.875rem;
+            color: #111827;
+        }
+        .badge {
+            padding: 0.125rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: 9999px;
+        }
+        .badge-success {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        .badge-warning {
+            background-color: #fef9c3;
+            color: #854d0e;
+        }
+        .badge-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="/" class="text-xl font-bold text-blue-600">CarRental</a>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        {% if session.get('license_no') %}
+                            <a href="/dashboard" class="nav-link">Dashboard</a>
+                            <a href="/cars" class="nav-link">Browse Cars</a>
+                            <a href="/reserve" class="nav-link">Make Reservation</a>
+                            <a href="/my_reservations" class="nav-link">My Reservations</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    {% if session.get('license_no') %}
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm text-gray-700">Welcome, {{ session.get('name', 'User') }}</span>
+                            <button onclick="logout()" class="btn-secondary">
+                                <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                            </button>
+                        </div>
+                    {% else %}
+                        <a href="/login" class="nav-link">Login</a>
+                        <a href="/register" class="btn-primary">Sign Up</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Content -->
+    <main class="max-w-7xl mx-auto py-6 px-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white mt-12">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 md:flex md:items-center md:justify-between lg:px-8">
+            <div class="flex justify-center space-x-6 md:order-2">
+                <a href="#" class="text-gray-400 hover:text-gray-500">
+                    <i class="fab fa-facebook"></i>
+                </a>
+                <a href="#" class="text-gray-400 hover:text-gray-500">
+                    <i class="fab fa-instagram"></i>
+                </a>
+                <a href="#" class="text-gray-400 hover:text-gray-500">
+                    <i class="fab fa-twitter"></i>
+                </a>
+            </div>
+            <div class="mt-8 md:mt-0 md:order-1">
+                <p class="text-center text-base text-gray-400">
+                    &copy; 2025 CarRental. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notifications -->
+    <div id="notifications" class="fixed bottom-4 right-4 space-y-2"></div>
+
+    <script>
+        // Active link highlighting
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Notification system
+        function showNotification(message, type = 'success') {
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500'
+            };
+            const notification = document.createElement('div');
+            notification.className = `${colors[type]} text-white px-6 py-4 rounded-lg shadow-lg`;
+            notification.textContent = message;
+            document.getElementById('notifications').appendChild(notification);
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Logout functionality
+        async function logout() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                showNotification('Error logging out', 'error');
+            }
+        }
+
+        // Form validation helper
+        function validateForm(formId, rules) {
+            const form = document.getElementById(formId);
+            let isValid = true;
+            
+            rules.forEach(rule => {
+                const input = form.querySelector(`[name="${rule.field}"]`);
+                const value = input.value.trim();
+                
+                if (rule.required && !value) {
+                    showError(input, `${rule.field} is required`);
+                    isValid = false;
+                }
+                
+                if (rule.minLength && value.length < rule.minLength) {
+                    showError(input, `${rule.field} must be at least ${rule.minLength} characters`);
+                    isValid = false;
+                }
+                
+                if (rule.pattern && !rule.pattern.test(value)) {
+                    showError(input, rule.message);
+                    isValid = false;
+                }
+            });
+            
+            return isValid;
+        }
+
+        function showError(input, message) {
+            input.classList.add('border-red-500');
+            const error = document.createElement('p');
+            error.className = 'text-red-500 text-xs mt-1';
+            error.textContent = message;
+            input.parentNode.appendChild(error);
+        }
+
+        // Date formatting helper
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('en-IN', options);
+        }
+
+        // Currency formatting helper
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR'
+            }).format(amount);
+        }
+    </script>
+</body>
+</html>
