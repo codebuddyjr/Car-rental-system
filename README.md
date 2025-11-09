@@ -1,4 +1,4 @@
-# Car Rental Web (Flask)
+# Car Rental System
 
 ## Setup
 
